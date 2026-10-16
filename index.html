@@ -80,14 +80,29 @@ footer{border-top:1px solid var(--line);padding:48px 0 calc(40px + env(safe-area
 .days{display:flex;gap:2px;margin-top:14px;height:30px}.days i{flex:1;border-radius:2px;background:var(--ok);opacity:.85;min-width:1px}
 .days i.warn{background:var(--warn)}.days i.bad{background:var(--bad)}
 .scale{display:flex;justify-content:space-between;color:var(--mut);font-size:12px;margin-top:6px}
-.note{color:var(--mut);font-size:14px;border-left:2px solid var(--acc);padding:2px 0 2px 14px;margin:18px 0}
+.note{color:var(--mut);font-size:14px;max-width:64ch;margin:18px 0}
+.imp{display:grid;grid-template-columns:270px 1fr;border:1px solid var(--line);border-radius:22px;overflow:hidden;margin-top:36px;background:var(--card)}
+.imp-src{border-right:1px solid var(--line);padding:10px}
+.src{display:flex;justify-content:space-between;align-items:center;gap:10px;white-space:nowrap;padding:12px 14px;border-radius:12px;font-size:15px}
+.src.on{background:#17161d}.src i{font-style:normal;font-size:12px;color:var(--mut)}.src.on i{color:var(--ok)}
+.imp-main{padding:22px;min-width:0}
+.field{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 14px;color:var(--mut);font-size:14px}
+.field span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.field b{background:var(--ink);color:#000;border-radius:8px;padding:8px 14px;font-weight:600;font-size:14px;flex:none}
+.imp-t{display:flex;justify-content:space-between;align-items:baseline;margin:22px 0 8px}.imp-t span{color:var(--mut);font-size:14px}
+.trk{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.cv{width:40px;height:40px;border-radius:8px}.trk b{display:block;font-weight:500;font-size:15px}.trk span{color:var(--mut);font-size:13px}
+.trk em{font-style:normal;font-size:13px;font-variant-numeric:tabular-nums;color:var(--mut)}.trk em.ok{color:var(--ok)}
+.prog{height:3px;background:var(--line);border-radius:3px;margin-top:14px;overflow:hidden}.prog i{display:block;height:100%;width:97%;background:var(--ink)}
+.imp-main small{display:block;margin-top:8px;color:var(--mut);font-size:13px}
+
 .inc{border-top:1px solid var(--line);padding:18px 0}.inc time{color:var(--mut);font-size:14px}.inc p{color:var(--mut)}
 .rel{border:1px solid var(--line);border-radius:22px;padding:28px;margin-bottom:16px;background:var(--card)}
 .rel h3{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}.rel time{color:var(--mut);font:400 14px var(--body)}
 .rel ul{margin:14px 0 0 20px;color:var(--mut)}.rel li{margin:4px 0}
 .dl{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin:34px 0}
 .legal h2{font-size:22px;margin:30px 0 8px}.legal p{color:var(--mut);max-width:70ch}
-@media(max-width:820px){.hero,.fg{grid-template-columns:1fr}.grid,.dl{grid-template-columns:1fr}nav{gap:14px;font-size:14px}.nav{gap:12px}.brand span{display:none}section{padding:56px 0}}
+@media(max-width:820px){.imp{grid-template-columns:1fr}.imp-src{display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}.src{white-space:nowrap;flex:none}.hero,.fg{grid-template-columns:1fr}.grid,.dl{grid-template-columns:1fr}nav{gap:14px;font-size:14px}.nav{gap:12px}.brand span{display:none}section{padding:56px 0}}
 @media(max-width:560px){nav a.hide{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.line .w{background-position:0 0}}
 </style>
@@ -112,8 +127,8 @@ footer{border-top:1px solid var(--line);padding:48px 0 calc(40px + env(safe-area
 const CFG={
   github:"https://github.com/your-name/lirix",
   releases:"https://github.com/your-name/lirix/releases",
-  telegram:"https://t.me/TheLirix",
-  support:"https://t.me/TheLirix",
+  telegram:"https://t.me/your_channel",
+  support:"https://t.me/your_support",
   statusUrl:"" /* URL вашего status.json (формат ниже). Пусто = демо-данные */
 };
 /* Формат status.json:
@@ -147,11 +162,24 @@ const home=()=>`
     <div class="card"><h3>Мастерская</h3><p>Публикуйте свои темы, пресеты и эквалайзеры и забирайте чужие в один клик.</p></div>
   </div></section>
 <section id="migration"><h2>Перенесите библиотеку из других сервисов</h2><p class="lead" style="margin-top:12px">Вставьте ссылку на плейлист — Lirix найдёт треки и соберёт библиотеку.</p>
-  <div class="card wide" style="margin-top:36px"><div class="chips"><span class="chip">Яндекс Музыка</span><span class="chip">Deezer</span><span class="chip">YouTube</span><span class="chip">VK Музыка</span></div>
-  <pre>импорт: плейлист «Для дороги»
-найдено: <em>142 из 142 треков</em>
-статус: добавлено в вашу библиотеку</pre></div>
-  <p class="note">Каждый пользователь подключает свои аккаунты отдельно: токены одного человека не попадают к другому.</p></section>
+  <div class="imp" aria-label="Пример импорта плейлиста">
+    <div class="imp-src">
+      <div class="src on"><span>Яндекс Музыка</span><i>подключено</i></div>
+      <div class="src"><span>Deezer</span><i>подключить</i></div>
+      <div class="src"><span>YouTube</span><i>подключить</i></div>
+      <div class="src"><span>VK Музыка</span><i>подключить</i></div>
+    </div>
+    <div class="imp-main">
+      <div class="field"><span>music.yandex.ru/users/you/playlists/1003</span><b>Импортировать</b></div>
+      <div class="imp-t"><strong>Для дороги</strong><span>142 трека</span></div>
+      <div class="trk"><div class="cv" style="background:#3b3552"></div><div><b>Первый снег</b><span>Север 61</span></div><em class="ok">3:42 ✓</em></div>
+      <div class="trk"><div class="cv" style="background:#52353b"></div><div><b>Ночной маршрут</b><span>Тихий город</span></div><em class="ok">2:58 ✓</em></div>
+      <div class="trk"><div class="cv" style="background:#34504a"></div><div><b>Стекло</b><span>Мира Лан</span></div><em class="ok">4:05 ✓</em></div>
+      <div class="trk"><div class="cv" style="background:#4d4a35"></div><div><b>Окна на запад</b><span>Холод</span></div><em>ищем…</em></div>
+      <div class="prog"><i></i></div><small>Добавлено 138 из 142 · остальные в очереди</small>
+    </div>
+  </div>
+  <p class="note">Подключения у каждого пользователя свои: аккаунты и токены одного человека не видны другому.</p></section>
 <section id="faq"><h2>Частые вопросы</h2><div style="margin-top:26px">
 <details><summary>Lirix бесплатный?</summary><p>Да, приложение бесплатно. Платные подписки сервисов, из которых вы переносите музыку, остаются за вами.</p></details>
 <details><summary>Какие сервисы можно подключить?</summary><p>Яндекс Музыку, Deezer, YouTube и VK. Подключение у каждого пользователя своё.</p></details>
