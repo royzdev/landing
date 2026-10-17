@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TokenMgr · Dev Console</title>
+<style>
+:root{--bg:#08080f;--card:#0e0e1a;--line:#1e1e2e;--acc:#b794ff;--pink:#ff7ad9;--ok:#4ade80;--err:#f87171;--warn:#fbbf24;--ink:#e8e6f0;--mut:#6b6880;--sp:#1ed760;--am:#fa233b}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font:14px/1.5 "SF Mono","Fira Code",ui-monospace,monospace;-webkit-font-smoothing:antialiased}
+body{display:grid;grid-template-rows:auto 1fr;grid-template-columns:1fr 420px;height:100vh;overflow:hidden}
+
+/* ── top bar ── */
+header{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:10px 18px;background:var(--card);border-bottom:1px solid var(--line)}
+.logo{font:700 15px/1 "Segoe UI",sans-serif;letter-spacing:-.3px;color:var(--ink)}
+.logo span{color:var(--acc)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--err);transition:background .4s;flex-shrink:0}
+.status-dot.ok{background:var(--ok)}
+.status-dot.spin{background:var(--warn);animation:pulse 1s infinite}
+#sp-status,#am-status{font-size:11px;color:var(--mut)}
+.sep{width:1px;height:16px;background:var(--line)}
+.refresh-btn{margin-left:auto;padding:5px 12px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--ink);font:inherit;cursor:pointer;font-size:12px}
+.refresh-btn:hover{border-color:var(--acc);color:var(--acc)}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* ── search panel ── */
+.search-panel{padding:18px;overflow-y:auto;border-right:1px solid var(--line)}
+.panel-title{font:600 11px/1 sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin-bottom:14px}
+
+.src-tabs{display:flex;gap:6px;margin-bottom:14px}
+.src-tab{padding:5px 14px;border-radius:6px;border:1px solid var(--line);background:none;color:var(--mut);font:inherit;font-size:12px;cursor:pointer;transition:all .2s}
+.src-tab.sp.active{border-color:var(--sp);color:var(--sp);background:rgba(30,215,96,.08)}
+.src-tab.am.active{border-color:var(--am);color:var(--am);background:rgba(250,35,59,.08)}
+
+.search-row{display:flex;gap:8px;margin-bottom:12px}
+input[type=text]{flex:1;padding:8px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit;font-size:13px;outline:none;transition:border .2s}
+input[type=text]:focus{border-color:var(--acc)}
+.go-btn{padding:8px 16px;border-radius:8px;border:none;background:var(--acc);color:#0a0a14;font:700 13px/1 inherit;cursor:pointer;white-space:nowrap;transition:opacity .2s}
+.go-btn:hover{opacity:.85}
+.go-btn:disabled{opacity:.4;cursor:default}
+
+.type-row{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.type-chip{padding:3px 10px;border-radius:20px;border:1px solid var(--line);background:none;color:var(--mut);font:inherit;font-size:11px;cursor:pointer;transition:all .15s}
+.type-chip.active{border-color:var(--acc);color:var(--acc);background:rgba(183,148,255,.1)}
+
+.results{display:flex;flex-direction:column;gap:8px}
+.track-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;transition:border .2s;cursor:default}
+.track-card:hover{border-color:rgba(183,148,255,.4)}
+.track-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;background:var(--line);flex-shrink:0}
+.track-thumb-placeholder{width:44px;height:44px;border-radius:6px;background:var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+.track-info{flex:1;min-width:0}
+.track-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.track-artist{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.track-dur{font-size:11px;color:var(--mut)}
+.src-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.04em}
+.src-badge.sp{background:rgba(30,215,96,.15);color:var(--sp)}
+.src-badge.am{background:rgba(250,35,59,.15);color:var(--am)}
+.preview-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--mut);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.preview-btn:hover{border-color:var(--acc);color:var(--acc)}
+.preview-btn.playing{border-color:var(--ok);color:var(--ok)}
+
+.empty{text-align:center;padding:40px 20px;color:var(--mut);font-size:13px}
+.loading{text-align:center;padding:32px;color:var(--mut)}
+.loading::after{content:"";display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;margin-left:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── console panel ── */
+.console-panel{display:flex;flex-direction:column;overflow:hidden}
+.console-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);flex-shrink:0}
+.console-header span{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
+.clear-btn{padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:none;color:var(--mut);font:11px/1 inherit;cursor:pointer}
+.clear-btn:hover{color:var(--err);border-color:var(--err)}
+#console{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:3px}
+.log-line{display:flex;gap:8px;font-size:12px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.02)}
+.log-time{color:var(--mut);flex-shrink:0;font-size:11px;padding-top:1px}
+.log-level{font-weight:700;flex-shrink:0;width:38px;font-size:11px;padding-top:1px}
+.log-level.info{color:var(--acc)}
+.log-level.ok{color:var(--ok)}
+.log-level.err{color:var(--err)}
+.log-level.warn{color:var(--warn)}
+.log-level.data{color:var(--pink)}
+.log-msg{flex:1;word-break:break-all;white-space:pre-wrap;color:var(--ink)}
+.log-msg.dim{color:var(--mut)}
+
+/* ── token info bar ── */
+.token-bar{padding:8px 14px;background:rgba(183,148,255,.04);border-top:1px solid var(--line);font-size:11px;color:var(--mut);display:flex;gap:12px;flex-wrap:wrap;flex-shrink:0}
+.token-bar span{display:flex;align-items:center;gap:5px}
+.tok-val{color:var(--ink);font-family:inherit;font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+@media(max-width:760px){
+  body{grid-template-columns:1fr;grid-template-rows:auto 1fr auto}
+  .console-panel{max-height:260px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Token<span>Mgr</span> · Dev</div>
+  <div class="status-dot spin" id="sp-dot"></div>
+  <div id="sp-status">Spotify: connecting…</div>
+  <div class="sep"></div>
+  <div class="status-dot ok" id="am-dot"></div>
+  <div id="am-status">Apple Music: ready (public API)</div>
+  <button class="refresh-btn" onclick="refreshToken()">↻ Refresh token</button>
+</header>
+
+<div class="search-panel">
+  <div class="panel-title">Search</div>
+
+  <div class="src-tabs">
+    <button class="src-tab sp active" data-src="sp" onclick="setSrc('sp',this)">
+      <svg width="13" height="13" viewBox="0 0 168 168" style="vertical-align:middle;margin-right:5px"><path fill="#1ED760" d="m84 .3C37.7.3.3 37.7.3 84c0 46.3 37.4 83.7 83.7 83.7 46.3 0 83.7-37.4 83.7-83.7C167.7 37.7 130.3.3 84 .3zm38.4 120.5c-1.5 2.5-4.7 3.2-7.2 1.7C96.6 110.5 71.8 107.8 42.7 114.4c-2.8.6-5.6-1.1-6.2-3.9-.6-2.8 1.1-5.6 3.9-6.2 31.9-7.3 59.3-4.2 81.3 9.3 2.5 1.5 3.2 4.7 1.7 7.2zm10.2-22.8c-1.9 3.1-5.9 4-9 2.2C100.9 86.2 66.6 82.2 40 90.3c-3.5 1-7.1-.9-8.1-4.4-1-3.5.9-7.1 4.4-8.1 30.4-9.2 68.2-4.8 94.1 11.1 3.1 1.9 4 5.9 2.2 9zm.9-23.7C107 57.3 62.5 55.8 36.7 63.6c-4.1 1.3-8.5-1.1-9.8-5.2-1.3-4.1 1.1-8.5 5.2-9.8 29.6-9 78.8-7.2 109.8 11.2 3.7 2.2 4.9 7 2.7 10.7-2.2 3.7-7 4.9-10.7 2.7z"/></svg>
+      Spotify
+    </button>
+    <button class="src-tab am" data-src="am" onclick="setSrc('am',this)">
+      <svg width="13" height="13" viewBox="0 0 305 305" style="vertical-align:middle;margin-right:5px"><path fill="#FA233B" d="M40.7 112.1C15 156.9 31.3 224.8 59.9 265.9 74.1 286.5 88.5 305 108.2 305c.4 0 .7 0 1.1-.02 9.3-.37 16-3.2 22.5-6 7.3-3.1 14.8-6.3 26.6-6.3 11.2 0 18.4 3.1 25.3 6.1 6.8 3 13.9 6 24.3 5.8 22.2-.4 35.9-20.4 47.9-37.9 12.6-18.4 18.9-36.2 21-43l.09-.27c.4-1.2-.17-2.5-1.33-3.1l-.18-.08c-3.9-1.6-38.3-16.8-38.6-58.4-.34-33.7 25.8-51.6 31-54.8l.24-.15c.57-.37.96-.94 1.1-1.6.13-.66-.01-1.35-.39-1.9C250.8 82.8 223.2 78.8 212.1 78.3c-1.6-.16-3.3-.24-4.95-.24-13.1 0-25.6 4.9-35.6 8.9-6.9 2.7-12.9 5.1-17.1 5.1-4.6 0-10.7-2.4-17.6-5.2-9.3-3.7-19.9-7.9-31.1-7.9-.27 0-.53 0-.79.01C79.0 79.3 54.3 94.2 40.7 112.1ZM212.1 0c-15.8.64-34.7 10.3-46 23.6-9.6 11.1-19 29.7-16.5 48.4.16 1.17 1.1 2.07 2.28 2.16 1.06.08 2.15.13 3.23.13 15.4 0 32-8.5 43.4-22.3 12-14.5 18-33.1 16.2-49.8-.14-1.3-1.3-2.28-2.59-2.22Z"/></svg>
+      Apple Music
+    </button>
+  </div>
+
+  <div class="type-row" id="type-row">
+    <button class="type-chip active" data-type="track" onclick="toggleType('track',this)">track</button>
+    <button class="type-chip active" data-type="album" onclick="toggleType('album',this)">album</button>
+    <button class="type-chip active" data-type="artist" onclick="toggleType('artist',this)">artist</button>
+    <button class="type-chip sp-only active" data-type="playlist" onclick="toggleType('playlist',this)">playlist</button>
+  </div>
+
+  <div class="search-row">
+    <input type="text" id="q" placeholder="Track name, artist, album…" onkeydown="if(event.key==='Enter')doSearch()">
+    <button class="go-btn" id="go-btn" onclick="doSearch()">Search</button>
+  </div>
+
+  <div id="results"><div class="empty">Enter a track name and hit Search</div></div>
+</div>
+
+<div class="console-panel">
+  <div class="console-header">
+    <span>Console</span>
+    <button class="clear-btn" onclick="clearLog()">Clear</button>
+  </div>
+  <div id="console"></div>
+  <div class="token-bar" id="token-bar">
+    <span>SP token: <span class="tok-val" id="tok-preview">—</span></span>
+    <span>Expires: <span class="tok-val" id="tok-exp">—</span></span>
+    <span>AM: public (no token)</span>
+  </div>
+</div>
+
+<audio id="preview-audio" style="display:none"></audio>
+
+<script>
+/* ═══════════════════════════════════════════
+   TOKEN MANAGER  (same logic as landing)
+═══════════════════════════════════════════ */
+const TokenMgr=(()=>{
+  // Client Credentials — public Spotify dev app, no user login needed.
+  // Swap in your own credentials via env or hardcode below.
+  const SP_ID  = "3896ab96b3194779b5e962203757a877";
+  const SP_SEC = "3914601ef80944a3abed1d9b129bb93b";
+  let _tok=null,_exp=0;
+
+  async function _fetch(){
+    log("info","SP","Fetching Client Credentials token…");
+    const basic=btoa(SP_ID+":"+SP_SEC);
+    const body="grant_type=client_credentials";
+    // прямой запрос (работает из Tauri/WebView и с нормальным Origin)
+    const endpoints=[
+      ()=>fetch("https://accounts.spotify.com/api/token",{
+            method:"POST",
+            headers:{"Content-Type":"application/x-www-form-urlencoded",
+                     "Authorization":"Basic "+basic},
+            body}),
+      // CORS-прокси fallback для браузера из файла/Claude preview
+      ()=>fetch("https://corsproxy.io/?url="+encodeURIComponent("https://accounts.spotify.com/api/token"),{
+            method:"POST",
+            headers:{"Content-Type":"application/x-www-form-urlencoded",
+                     "Authorization":"Basic "+basic},
+            body}),
+    ];
+    for(const ep of endpoints){
+      try{
+        const r=await ep();
+        if(!r.ok){log("warn","SP",`token endpoint ${r.status}, trying next…`);continue}
+        const d=await r.json();
+        if(d.access_token){
+          _tok=d.access_token;
+          _exp=Date.now()+((d.expires_in||3600)-60)*1000;
+          log("ok","SP",`Token OK · expires in ${d.expires_in}s`);
+          updateStatusBar();
+          return _tok;
+        }
+        log("warn","SP","No token in response: "+JSON.stringify(d).slice(0,120));
+      }catch(e){log("warn","SP","endpoint failed: "+e.message)}
+    }
+    log("err","SP","All token endpoints failed");
+    updateStatusBar(true);
+    return null;
+  }
+
+  async function spotify(){
+    if(_tok&&Date.now()<_exp)return _tok;
+    return _fetch();
+  }
+
+  function _schedule(){
+    const d=Math.max(500,_exp-Date.now()-30000);
+    setTimeout(async()=>{await _fetch();_schedule()},d);
+  }
+  _fetch().then(()=>_schedule());
+
+  /* ── Spotify search ── */
+  async function spSearch(q,types="track,album,artist,playlist",limit=20){
+    const tok=await spotify();if(!tok)return null;
+    log("info","SP",`search("${q}", types=${types})`);
+    const apiUrl=`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=${types}&limit=${limit}`;
+    const headers={Authorization:"Bearer "+tok};
+    let r;
+    try{
+      r=await fetch(apiUrl,{headers});
+      if(!r.ok)throw new Error("HTTP "+r.status);
+    }catch(e){
+      log("warn","SP","direct failed ("+e.message+"), trying CORS proxy…");
+      try{
+        r=await fetch("https://corsproxy.io/?url="+encodeURIComponent(apiUrl),{headers});
+      }catch(e2){log("err","SP","proxy also failed: "+e2.message);return null}
+    }
+    if(!r.ok){log("err","SP",`search HTTP ${r.status}`);return null}
+    const d=await r.json();
+    const counts=Object.entries(d).map(([k,v])=>`${k}:${v?.items?.length||0}`).join(" ");
+    log("data","SP","Results → "+counts);
+    return d;
+  }
+
+  /* ── Apple Music / iTunes ── */
+  async function amSearch(term,country="us",limit=25,media="music"){
+    log("info","AM",`search("${term}", country=${country})`);
+    const apiUrl=`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&country=${country}&limit=${limit}&media=${media}&entity=musicTrack`;
+    let r;
+    try{
+      r=await fetch(apiUrl);
+      if(!r.ok)throw new Error("HTTP "+r.status);
+    }catch(e){
+      log("warn","AM","direct failed ("+e.message+"), trying CORS proxy…");
+      try{
+        r=await fetch("https://corsproxy.io/?url="+encodeURIComponent(apiUrl));
+      }catch(e2){log("err","AM","proxy also failed: "+e2.message);return null}
+    }
+    if(!r.ok){log("err","AM",`search HTTP ${r.status}`);return null}
+    const d=await r.json();
+    log("data","AM",`Results → ${d.resultCount} tracks`);
+    return d;
+  }
+
+  function status(){return{spReady:!!_tok&&Date.now()<_exp,spExp:_exp,amReady:true,tok:_tok}}
+
+  return{spotify,spSearch,amSearch,status};
+})();
+
+window.TokenMgr=TokenMgr;
+
+/* ═══════════════════════════════════════════
+   CONSOLE
+═══════════════════════════════════════════ */
+function log(level,src,msg){
+  const el=document.getElementById("console");
+  const now=new Date();
+  const ts=now.toTimeString().slice(0,8)+"."+String(now.getMilliseconds()).padStart(3,"0");
+  const line=document.createElement("div");
+  line.className="log-line";
+  const isDim=level==="data"&&msg.length>120;
+  line.innerHTML=`<span class="log-time">${ts}</span>`+
+    `<span class="log-level ${level}">${level.toUpperCase()}</span>`+
+    `<span class="log-msg${isDim?" dim":""}">[${src}] ${msg}</span>`;
+  el.appendChild(line);
+  el.scrollTop=el.scrollHeight;
+}
+
+function clearLog(){document.getElementById("console").innerHTML="";log("info","SYS","Console cleared")}
+
+function updateStatusBar(err){
+  const st=TokenMgr.status();
+  const dot=document.getElementById("sp-dot");
+  const spSt=document.getElementById("sp-status");
+  const amSt=document.getElementById("am-status");
+  if(err){dot.className="status-dot";spSt.textContent="Spotify: error — check creds"}
+  else if(st.spReady){
+    dot.className="status-dot ok";
+    const minsLeft=Math.round((st.spExp-Date.now())/60000);
+    spSt.textContent=`Spotify: OK · ${minsLeft}m left`;
+    document.getElementById("tok-preview").textContent=st.tok?st.tok.slice(0,22)+"…":"—";
+    document.getElementById("tok-exp").textContent=st.spExp?new Date(st.spExp).toLocaleTimeString():"—";
+  }else{dot.className="status-dot spin";spSt.textContent="Spotify: connecting…"}
+  amSt.textContent="Apple Music: ready (iTunes API)";
+}
+
+async function refreshToken(){
+  document.getElementById("sp-dot").className="status-dot spin";
+  document.getElementById("sp-status").textContent="Spotify: refreshing…";
+  await TokenMgr.spotify();
+  updateStatusBar();
+}
+
+/* ═══════════════════════════════════════════
+   SEARCH UI
+═══════════════════════════════════════════ */
+let _src="sp";
+const _types=new Set(["track","album","artist","playlist"]);
+let _playingId=null;
+
+function setSrc(src,btn){
+  _src=src;
+  document.querySelectorAll(".src-tab").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  // playlist type chip only for Spotify
+  document.querySelectorAll(".sp-only").forEach(c=>{
+    c.style.display=src==="sp"?"":"none";
+  });
+  log("info","UI",`Source → ${src==="sp"?"Spotify":"Apple Music"}`);
+}
+
+function toggleType(type,btn){
+  if(_types.has(type)){_types.delete(type);btn.classList.remove("active")}
+  else{_types.add(type);btn.classList.add("active")}
+}
+
+function fmtDur(ms){if(!ms)return"";const s=Math.round(ms/1000);return`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
+function fmtDurSec(s){if(!s)return"";return`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
+
+function previewBtn(previewUrl,id){
+  if(!previewUrl)return'<button class="preview-btn" disabled title="No preview" style="opacity:.3">▷</button>';
+  return`<button class="preview-btn" id="pbtn-${id}" onclick="playPreview('${previewUrl}','${id}')" title="Preview">▷</button>`;
+}
+
+function playPreview(url,id){
+  const audio=document.getElementById("preview-audio");
+  if(_playingId===id){
+    audio.pause();audio.currentTime=0;_playingId=null;
+    document.getElementById("pbtn-"+id)?.classList.remove("playing");
+    document.getElementById("pbtn-"+id).textContent="▷";
+    return;
+  }
+  if(_playingId){
+    document.getElementById("pbtn-"+_playingId)?.classList.remove("playing");
+    const old=document.getElementById("pbtn-"+_playingId);
+    if(old)old.textContent="▷";
+  }
+  _playingId=id;audio.src=url;audio.play();
+  const btn=document.getElementById("pbtn-"+id);
+  if(btn){btn.classList.add("playing");btn.textContent="■"}
+  audio.onended=()=>{_playingId=null;if(btn){btn.classList.remove("playing");btn.textContent="▷"}};
+  log("info","AUDIO",`Playing preview: ${url.slice(0,60)}…`);
+}
+
+function renderSpotify(data){
+  const cards=[];
+  if(data.tracks?.items)for(const t of data.tracks.items){
+    if(!t)continue;
+    const img=t.album?.images?.[2]?.url||t.album?.images?.[0]?.url||"";
+    const id="sp-t-"+t.id;
+    cards.push(`<div class="track-card">
+      ${img?`<img class="track-thumb" src="${img}" loading="lazy" onerror="this.style.display='none'">`:`<div class="track-thumb-placeholder">♪</div>`}
+      <div class="track-info">
+        <div class="track-name">${t.name}</div>
+        <div class="track-artist">${t.artists?.map(a=>a.name).join(", ")||""} · ${t.album?.name||""}</div>
+      </div>
+      <div class="track-meta">
+        <span class="src-badge sp">SP</span>
+        <span class="track-dur">${fmtDur(t.duration_ms)}</span>
+      </div>
+      ${previewBtn(t.preview_url,id)}
+    </div>`);
+  }
+  if(data.albums?.items)for(const a of data.albums.items){
+    if(!a)continue;
+    const img=a.images?.[2]?.url||a.images?.[0]?.url||"";
+    cards.push(`<div class="track-card">
+      ${img?`<img class="track-thumb" src="${img}" loading="lazy">`:`<div class="track-thumb-placeholder">💿</div>`}
+      <div class="track-info">
+        <div class="track-name">${a.name}</div>
+        <div class="track-artist">${a.artists?.map(x=>x.name).join(", ")||""} · ${a.total_tracks} tracks · ${a.release_date?.slice(0,4)||""}</div>
+      </div>
+      <div class="track-meta"><span class="src-badge sp">SP</span><span class="track-dur">Album</span></div>
+      <button class="preview-btn" disabled style="opacity:.3">▷</button>
+    </div>`);
+  }
+  if(data.artists?.items)for(const a of data.artists.items){
+    if(!a)continue;
+    const img=a.images?.[2]?.url||a.images?.[0]?.url||"";
+    cards.push(`<div class="track-card">
+      ${img?`<img class="track-thumb" src="${img}" loading="lazy" style="border-radius:50%">`:`<div class="track-thumb-placeholder">👤</div>`}
+      <div class="track-info">
+        <div class="track-name">${a.name}</div>
+        <div class="track-artist">${(a.followers?.total||0).toLocaleString()} followers · ${a.genres?.slice(0,2).join(", ")||""}</div>
+      </div>
+      <div class="track-meta"><span class="src-badge sp">SP</span></div>
+      <button class="preview-btn" disabled style="opacity:.3">▷</button>
+    </div>`);
+  }
+  if(data.playlists?.items)for(const p of data.playlists.items){
+    if(!p)continue;
+    const img=p.images?.[0]?.url||"";
+    cards.push(`<div class="track-card">
+      ${img?`<img class="track-thumb" src="${img}" loading="lazy">`:`<div class="track-thumb-placeholder">📋</div>`}
+      <div class="track-info">
+        <div class="track-name">${p.name}</div>
+        <div class="track-artist">${p.owner?.display_name||""} · ${p.tracks?.total||"?"} tracks</div>
+      </div>
+      <div class="track-meta"><span class="src-badge sp">SP</span></div>
+      <button class="preview-btn" disabled style="opacity:.3">▷</button>
+    </div>`);
+  }
+  return cards;
+}
+
+function renderApple(data){
+  const cards=[];
+  for(const t of(data.results||[])){
+    const id="am-t-"+t.trackId;
+    const img=(t.artworkUrl100||"").replace("100x100bb","60x60bb");
+    cards.push(`<div class="track-card">
+      ${img?`<img class="track-thumb" src="${img}" loading="lazy" onerror="this.style.display='none'">`:`<div class="track-thumb-placeholder">♪</div>`}
+      <div class="track-info">
+        <div class="track-name">${t.trackName||t.collectionName||"—"}</div>
+        <div class="track-artist">${t.artistName||""} · ${t.collectionName||""}</div>
+      </div>
+      <div class="track-meta">
+        <span class="src-badge am">AM</span>
+        <span class="track-dur">${fmtDurSec(Math.round((t.trackTimeMillis||0)/1000))}</span>
+      </div>
+      ${previewBtn(t.previewUrl,id)}
+    </div>`);
+  }
+  return cards;
+}
+
+async function doSearch(){
+  const q=document.getElementById("q").value.trim();
+  if(!q)return;
+  const res=document.getElementById("results");
+  res.innerHTML='<div class="loading">Searching</div>';
+  document.getElementById("go-btn").disabled=true;
+  try{
+    let cards=[];
+    if(_src==="sp"){
+      const types=[..._types].filter(t=>t!=="playlist"||_src==="sp").join(",");
+      const data=await TokenMgr.spSearch(q,types||"track",20);
+      if(!data){res.innerHTML='<div class="empty">Error — check console</div>';return}
+      cards=renderSpotify(data);
+    }else{
+      const data=await TokenMgr.amSearch(q,"us",25,"music");
+      if(!data){res.innerHTML='<div class="empty">Error — check console</div>';return}
+      cards=renderApple(data);
+    }
+    if(!cards.length){res.innerHTML='<div class="empty">No results</div>';return}
+    res.innerHTML=cards.join("");
+  }finally{
+    document.getElementById("go-btn").disabled=false;
+  }
+}
+
+/* init */
+log("ok","SYS","TokenMgr Dev Console loaded");
+log("info","SYS","Spotify: Client Credentials (no user login required)");
+log("info","SYS","Apple Music: iTunes Search API (public endpoint)");
+updateStatusBar();
+</script>
+</body>
+</html>
